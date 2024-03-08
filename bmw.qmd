@@ -1,0 +1,362 @@
+---
+title-block-banner: "figures/baner.jpg"
+title: "Coursework for course labs: Methods of data acquisition and visualization"
+author: Karol Kowal
+date: today
+date-format: "25/01/2023"
+format: 
+  html:
+    self-contained: true
+    echo: false
+    message: false 
+    warning: false
+editor: visual
+bibliography: references.bib
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(ggthemr)
+library(knitr)
+library(dplyr)
+library(kableExtra)
+library(flextable)
+library(ggplot2)
+library(jpeg)
+library(shiny)
+library(rstatix)
+library(rvest)
+library(stringr)
+library(plotly)
+library(DT)
+```
+
+```{r}
+#mtcars
+BMW <- read.csv("BMW_oczyszczone.csv", row.names = NULL)
+elo <- BMW %>% select(poczatek_produkcji, koniec_produkcji, ilosc_wyprodukowanych, model, typ, nadwozie, pojemnosc_silnika, uklad_cylindrow, ilosc_cylindrow, moc)
+nazwy <- c("Start of production", "End of Production", "Produced (pcs.)", "Model", "Generation", "Body", "Engine capacity (L)", "Cylinder arrangement", "Number of cylinders", "Power (hp)")
+colnames(elo) <- nazwy
+dane <- elo
+```
+
+```{r}
+library(formattable)
+```
+
+# BMW M models from 1971-2019
+
+In this report, I will analyze a data set containing all BMW cars from the M series along with their parameters. These are serially produced cars adapted for racing, rallying, driving on race tracks and at the same time can be driven on public roads. Cars marked with the letter “M” are characterized by powerful engines, advanced chassis, special brakes and aerodynamics, and increased power and performance compared to standard BMW models.
+
+## History
+
+The first widely regarded as BMW M in history was the E09 3.0 CSL model. The first specimen was produced in 1971. It was a sports variant of the 3.0 CS model and is known as the “Batmobile” because of its aerodynamic shape and distinctive wings @fig-1. A total of about 1400 units of this model were built, of which about 100 were intended for racing. BMW E09 3.0 CSL won several championship titles in DTM rallies and participated in long-distance races such as 24 Hours of Le Mans, 24 Hours of Spa and 1000 km Nürburgring. Production of the model ended in 1975.
+
+```{r}
+#| label: fig-1
+#| fig-cap: BMW E09 CSL
+#| fig-cap-location: top
+
+
+knitr::include_graphics("figures/E09 CSL.jpg")
+```
+
+The car had a 3.0-liter aluminum R6 engine with about 200 horsepower. This engine was mated to a 4-speed manual transmission. The car weighed about 1,250 kg which gave it a good power-to-weight ratio @tbl-1. The BMW E09 3.0 CSL was designed to compete in rallying and track racing. It had a sport suspension, braking system and an aerodynamic body that increased grip and performance. The car was also equipped with ABS and a leather steering wheel.
+
+```{r}
+#| tbl-cap: "Dane techniczne BMW E09 CSL"
+#| label: tbl-1
+
+df <- data.frame(c("Engine", "Max horse power", "Torque", "Drive", "Transmission", "Max speed", "0-100 km/h", "Weight"),
+                c("3.0 L R6", "200 hp at 6,000 rpm", "210 Nm at 4,500 rpm", "RWD", "4-speed manual or 5-speed manual", "220 km/h", "7.6 s
+", "1050 kg"))
+colnames(df) <- NULL
+
+df %>% kbl() %>% 
+  kable_material(c("striped", "hover"))
+
+```
+
+Na szczęście na tym modelu BMW nie poprzestało i kontynuowało produkcje "podkręconych" wersji swoich flagowych modeli. Poniżej znajduje się wykres który przestawia ilość wyprodukowanych samochodów przy zakończeniu produkcji.
+
+```{r}
+#| label: fig-produkcja
+#| fig-cap: "BMW production graph over the years"
+    ggthemr('pale')
+    o <- elo %>% 
+    group_by(`End of Production`) %>% 
+    mutate(`Number of produced cars`=sum(`Produced (pcs.)`)) %>% 
+    group_by(`End of Production`, `Number of produced cars`) %>% 
+    summarise()
+    p <- o %>% 
+    ggplot(aes(x=`End of Production`, y=`Number of produced cars`))+
+      geom_line()+
+      geom_point()
+
+  ggplotly(p)
+  ggthemr_reset()
+  
+  
+```
+
+Immediately striking are the four tops that are much higher than the others - this means that the most popular models ended production in these years, let's see what these cars are.
+
+```{r}
+#| column: page
+#| layout: 1000
+
+elo %>% 
+  arrange(desc(`Produced (pcs.)`)) %>% 
+  head(4) %>% 
+  formattable(.,list(`Produced (pcs.)` = color_bar("#F77361")))
+```
+
+```{r}
+#| layout-nrow: 2
+#| column: page
+#| fig-cap: 
+#| - "4th place: BMW M3 F80 Sedan (33414 pcs.)"
+#| - "3rd place: BMW M3 E92 Coupe (39954 pcs.)"
+#| - "2nd place: BMW M3 E36 Coupe (46881 pcs.)"
+#| - "1st place: BMW M3 E45 Coupe (54750 pcs.)"
+knitr::include_graphics("figures/M3 F80.jpg")
+knitr::include_graphics("figures/M3 E92.jpg")
+knitr::include_graphics("figures/M3 E36.jpg")
+knitr::include_graphics("figures/M3 E46.jpg")
+```
+
+Here we come to an interesting conclusion, namely, the best-selling cars are those whose base model is the BMW 3 Series, in addition, all cars occupying the podium have a coupe body.
+
+```{r}
+BMW <- read.csv("BMW_oczyszczone.csv", row.names = NULL)
+elo <- BMW %>% select(poczatek_produkcji, koniec_produkcji, ilosc_wyprodukowanych, model, typ, nadwozie, pojemnosc_silnika, uklad_cylindrow, ilosc_cylindrow, moc)
+  nazwy <- c("Start of production", "End of Production", "Produced (pcs.)", "Model", "Generation", "Body", "Engine capacity (L)", "Cylinder arrangement", "Number of cylinders", "Power (hp)")
+  colnames(elo) <- nazwy
+  dane <- elo
+  hej <- elo
+  hej$`Start of production` <- as.character(hej$`Start of production`)
+```
+
+## Performance
+
+Let's see how the variables in our dataset are correlated with each other:
+
+```{r}
+#| label: correlations
+#| fig-cap: Correlation matrix
+  hej$`Start of production` <- as.numeric(hej$`Start of production`)
+  elo %>% 
+  select(`Engine capacity (L)`, `Number of cylinders`, `Power (hp)`, `Start of production`) %>% 
+  cor_mat() %>% 
+  cor_plot(type = "lower", method = "shade", 
+           label = T, 
+           font.label = list(color = "white"),
+           insignificant = "blank")
+```
+
+The first fairly obvious conclusion that comes to mind is that as engine capacity increases, Number of cylinders increases. Another thing that can be noticed is that over the years BMW engines become more efficient, as horsepower relative to the year of manufacture increases much faster than engine capacity or number of cylinders.
+
+The capacity, number and arrangement of cylinders are also interestingly correlated, take a look at the next plot.
+
+```{r}
+#| layout-nrow: 1
+#| column: page
+#| label: fig-wykresy
+#| fig-cap: 
+#| - "Dependence of power on engine capacity"
+#| - "Relationship of the number of cylinders to engine capacity"
+#| fig-cap-location: bottom
+
+ggthemr('fresh')
+p <- hej %>% ggplot(aes(x=`Engine capacity (L)`, y=`Power (hp)`, color = `Cylinder arrangement`))+
+  geom_point()+
+  geom_smooth(method = lm, se=F)
+
+ggplotly(p)
+
+
+q <- hej %>% ggplot(aes(x=`Engine capacity (L)`, y=`Number of cylinders`, color = `Cylinder arrangement`))+
+  geom_point()
+
+ggplotly(q)
+
+ggthemr_reset()
+
+  
+```
+
+In both figures you can see the distinct groups that the Cylinder arrangement forms, this represents the principle that engineers who design engines follow, that is - 4- and 6-cylinder engines do not exceed a capacity of 3.8 L and are arranged in a row (R), while larger units are already constructed with 8 cylinders and more and also their arrangement changes into that resembling the letter V.
+
+Now let's take a look at what engines the different body versions offered. We can see that the sedan and coupe versions dominate the list in terms of the number of available power units, the most we can see in the two-door version at the same time in these cars there is also the greatest diversity when it comes to displacement.
+
+```{r}
+#| label: fig-licz
+#| fig-cap: "Engine capacities in each body version"
+pa <- hej
+
+pa$`Engine capacity (L)` <- ordered(pa$`Engine capacity (L)`, levels = c("6", "5", "4.4", "4", "3.8", "3.5", "3.2", "3", "2.5", "2"))
+p <- pa %>% ggplot(aes(Body, `Engine capacity (L)`=`Engine capacity (L)`, fill=`Engine capacity (L)`))+
+  geom_bar()+
+    scale_fill_manual(breaks = c("6", "5", "4.4", "4", "3.8", "3.5", "3.2", "3", "3", "2.5", "2"), 
+    values=c("#67161F", "#B32C2B", "#D6604D", "#F4A582", "#FADBC7", "#F7F7F7",
+                                         "#D1E6F0", "#92C4DE", "#4394C3", "#2366AC", "#0A2F61"))
+                                         
+ggplotly(p)
+```
+
+At the ends of the post representing the coupe versions we can see the 6 and 2 liter versions which are not found under the hoods of the other bodies, what are these cars?
+
+One of them is the aforementioned BMW E09 CSL seen on @fig-1 while the only 6-liter engine is embedded under the hood of the BMW M8 E31, which was produced in only one copy as a prototype, the car was meant to be a response to similar models from Porsche and Ferrari, a demonstration of BMW's technological and production capabilities when it comes to building a sports car.
+
+```{r}
+#| label: fig-2
+#| fig-cap: "BMW M8 E31"
+#| column: page
+
+knitr::include_graphics("figures/M8 E31.jpg")
+```
+
+However, does the fact that a car has the largest engine mean that it is therefore the most powerful? The correlation between power and capacity is quite large, but at the same time it is even more influenced by the period in which the model was produced @fig-correlations, and the BMW M8 E31 was produced in 1990. So let's see the ranking of all cars in terms of power.
+
+```{r}
+#| label: fig-44
+#| fig-cap: "Ranking of the most powerful models"
+#| column: page
+#| fig-height: 10
+
+ggthemr('pale')
+x <- c("X5 M F85 SUV" , "X6 M F86 SUV" , "M5 F10 Sedan" , "M6 F06 Sedan" ,
+"M6 F12 Coupe" , "M6 F13 Cabriolet" , "M8 E31 Coupe" , "X5 M E70 SUV" , "X6 M E71 SUV" ,
+"M5 E60 Sedan" , "M5 E61 Touring" , "M6 E63 Coupe" , "M6 E64 Cabriolet" , "M3 CS F80 Sedan" ,
+"M3 CRT E90 Sedan" , "M3 GTS E92 Coupe" , "M3 F80 Sedan" , "M3 E90 Sedan" , "M3 E92 Coupe" ,
+"M3 E93 Cabriolet" , "M5 E39 Sedan" , "M3 E46 GTR Coupe" , "M3 E46 CSL Coupe" , "M3 E46 Cabriolet" ,
+"M3 E46 Coupe" , "Z4 M Roadster E85 Roadster" , "Z4 M Coupe E86 Coupe" , "M5 E34 Sedan" ,
+ "M5 E34 Touring" , "1M Coupe E82 Coupe" , "M Roadster E36/7 Roadster" , "M Coupe E36/8 Coupe" ,
+ "M3 E36 Coupe" , "M3 E36 Sedan" , "M3 E36 Cabriolet" , "M 635 CSi E24 Coupe" , "M5 E28 Sedan" ,
+ "745i SA (M88) E23 Sedan" , "M1 E26 Coupe" , "M635CSi E24 Coupe" , "M3 E30 Coupe" , "M3 E30 Cabriolet" ,
+ "M535i E12 Sedan" , "M535i E28 Sedan" , "CSL E09 Coupe" , "2002 Turbo E20 Coupe")
+
+  pa <- hej
+  pa <- mutate(pa, Auto = paste(Model, Generation, Body))
+  pa$Auto <- ordered(pa$Auto, levels = rev(x))
+  p <- pa %>%
+  ggplot(aes(y=`Power (hp)`, x=Auto, fill=`Start of production`))+
+  geom_col()+
+  coord_flip()
+
+ggplotly(p)
+
+ggthemr_reset()
+```
+
+Here we see the realization of the correlation of the beginning of production with power - the longer and redder the bar, the greater the power. But on the neck of the juxtaposition one model stands out - the BMW M8 E31 prototype from 1990.
+
+But such a juxtaposition may be unfair, because as time goes by, technology develops and people are able to produce more and more powerful and efficient engines, in which case it is worth looking at how the juxtaposition of the best models in each decade looked like.
+
+```{r}
+#| lol-cap: "Cars of the decade"
+#| column: screen-inset
+#| layout-nrow: 1
+#| tbl-cap:
+#| - "'70"
+#| - "'80"
+#| - "'90"
+#| tbl-cap-location: bottom
+
+
+BMW <- read.csv("BMW_oczyszczone.csv", row.names = NULL)
+elo <- BMW %>% select(poczatek_produkcji, koniec_produkcji, ilosc_wyprodukowanych, model, typ, nadwozie, pojemnosc_silnika, uklad_cylindrow, ilosc_cylindrow, moc)
+  nazwy <- c("Start of production", "End of production", "Produced (pcs.)", "Model", "Generation", "Body", "Engine capacity (L)", "Cylinder arrangement", "Number of cylinders", "Power (hp)")
+  colnames(elo) <- nazwy
+  dane <- elo
+  hej <- elo
+  hej$`Start of production` <- as.character(hej$`Start of production`)
+
+
+  hej %>%
+  group_by(`Start of production`,`Model`, `Generation`, `Power (hp)`) %>%
+  summarise() %>%
+  subset(`Start of production` %in% c(1970:1979)) %>%
+  arrange(desc(`Power (hp)`)) %>% 
+  head(3) %>% 
+  flextable(cwidth = 3) %>%
+  set_caption("Lata '70") %>% 
+  theme_apa() %>%
+  color(j = c("Start of production", "Model", "Generation"),
+        color = "white", part = "body") %>% 
+  bg(j = "Start of production", bg = "#4394C3", part = "body") %>% 
+  bg(j = "Model", bg = "#0A2F61", part = "body") %>% 
+  bg(j = "Generation", bg = "#B32C2B", part = "body")
+  
+  hej %>%
+  group_by(`Start of production`,`Model`, `Generation`, `Power (hp)`) %>%
+  summarise() %>%
+  subset(`Start of production` %in% c(1980:1989)) %>%
+  arrange(desc(`Power (hp)`)) %>% 
+  head(3) %>% 
+  flextable(cwidth = 3) %>%
+  set_caption("Lata '80") %>% 
+  theme_apa() %>%
+  color(j = c("Start of production", "Model", "Generation"),
+        color = "white", part = "body") %>% 
+  bg(j = "Start of production", bg = "#4394C3", part = "body") %>% 
+  bg(j = "Model", bg = "#0A2F61", part = "body") %>% 
+  bg(j = "Generation", bg = "#B32C2B", part = "body")
+  
+  hej %>%
+  group_by(`Start of production`,`Model`, `Generation`, `Power (hp)`) %>%
+  summarise() %>%
+  subset(`Start of production` %in% c(1990:1999)) %>%
+  arrange(desc(`Power (hp)`)) %>% 
+  head(3) %>% 
+  flextable(cwidth = 3) %>%
+  set_caption("Lata '90") %>% 
+  theme_apa() %>%
+  color(j = c("Start of production", "Model", "Generation"),
+        color = "white", part = "body") %>% 
+  bg(j = "Start of production", bg = "#4394C3", part = "body") %>% 
+  bg(j = "Model", bg = "#0A2F61", part = "body") %>% 
+  bg(j = "Generation", bg = "#B32C2B", part = "body")
+  
+
+```
+
+```{r}
+#| column: page
+#| layout-nrow: 1
+#| tbl-cap:
+#| - "'00"
+#| - "'10"
+#| tbl-cap-location: bottom
+
+  hej %>%
+  group_by(`Start of production`,`Model`, `Generation`, `Power (hp)`) %>%
+  summarise() %>%
+  subset(`Start of production` %in% c(2000:2009)) %>%
+  arrange(desc(`Power (hp)`)) %>% 
+  head(3) %>% 
+  flextable(cwidth = 3) %>%
+  set_caption("Lata '00") %>% 
+  theme_apa() %>%
+  color(j = c("Start of production", "Model", "Generation"),
+        color = "white", part = "body") %>% 
+  bg(j = "Start of production", bg = "#4394C3", part = "body") %>% 
+  bg(j = "Model", bg = "#0A2F61", part = "body") %>% 
+  bg(j = "Generation", bg = "#B32C2B", part = "body")
+  
+hej %>%
+  group_by(`Start of production`,`Model`, `Generation`, `Power (hp)`) %>%
+  summarise() %>%
+  subset(`Start of production` %in% c(2010:2019)) %>%
+  arrange(desc(`Power (hp)`)) %>% 
+  head(3) %>% 
+  flextable(cwidth = 3) %>%
+  set_caption("Lata '10") %>% 
+  theme_apa() %>%
+  color(j = c("Start of production", "Model", "Generation"),
+        color = "white", part = "body") %>% 
+  bg(j = "Start of production", bg = "#4394C3", part = "body") %>% 
+  bg(j = "Model", bg = "#0A2F61", part = "body") %>% 
+  bg(j = "Generation", bg = "#B32C2B", part = "body")
+```
